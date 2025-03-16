@@ -1,94 +1,66 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import theme from './theme';
 
-// Layout components
-import Layout from './components/layout/Layout';
+// Components
+import Navbar from './components/Layout/Navbar';
+import Register from './components/Auth/Register';
+import Login from './components/Auth/Login';
+import Courses from './pages/Courses';
+import CourseDetails from './pages/CourseDetails';
+import Dashboard from './pages/Dashboard';
+import Chat from './components/Chat/Chat';
 
-// Page components
-import Home from './components/pages/Home';
-import Settings from './components/pages/Settings';
-import Notifications from './components/pages/Notifications';
-import Profile from './components/pages/Profile';
-import Videos from './components/pages/Videos';
-
-// Auth components
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
-import PrivateRoute from './components/auth/PrivateRoute';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2196f3',
-      light: '#64b5f6',
-      dark: '#1976d2',
-    },
-    secondary: {
-      main: '#f50057',
-      light: '#ff4081',
-      dark: '#c51162',
-    },
-  },
-  typography: {
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-    ].join(','),
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 8,
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-        },
-      },
-    },
-  },
-});
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+  return children;
+};
 
 const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
+        <Navbar />
         <Routes>
-          {/* Public routes */}
-          <Route path="/login" element={<Login />} />
+          {/* Public Routes */}
+          <Route path="/" element={<Navigate to="/courses" />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/courses/:slug" element={<CourseDetails />} />
 
-          {/* Protected routes */}
+          {/* Protected Routes */}
           <Route
-            path="/"
+            path="/dashboard"
             element={
-              <PrivateRoute>
-                <Layout />
-              </PrivateRoute>
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
             }
-          >
-            <Route index element={<Home />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="notifications" element={<Notifications />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="videos" element={<Videos />} />
-          </Route>
-
-          {/* Redirect unknown routes to home */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <Chat />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/courses/:slug/learn"
+            element={
+              <ProtectedRoute>
+                <CourseDetails />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Router>
     </ThemeProvider>
