@@ -22,6 +22,7 @@ import {
   CircularProgress,
   Paper,
   Stack,
+  Alert,
 } from '@mui/material';
 import {
   PlayCircleOutline as VideoIcon,
@@ -33,6 +34,8 @@ import {
   Grade as LevelIcon,
   People as EnrolledIcon,
   Star as StarIcon,
+  Person,
+  Timer,
 } from '@mui/icons-material';
 import api from '../services/api';
 
@@ -43,29 +46,37 @@ const CourseDetails = () => {
   const [course, setCourse] = useState(null);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(false);
+  const [error, setError] = useState('');
+  const token = localStorage.getItem('token');
 
   useEffect(() => {
-    fetchCourseDetails();
+    const fetchCourse = async () => {
+      try {
+        const response = await api.get(`/courses/${slug}`);
+        setCourse(response.data);
+      } catch (error) {
+        setError('Failed to load course details. Please try again later.');
+        console.error('Error fetching course:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourse();
   }, [slug]);
 
-  const fetchCourseDetails = async () => {
-    try {
-      const response = await api.get(`/courses/${slug}`);
-      setCourse(response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching course details:', error);
-      setLoading(false);
-    }
-  };
-
   const handleEnroll = async () => {
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
     try {
       setEnrolling(true);
       await api.post(`/courses/${course._id}/enroll`);
       navigate(`/courses/${slug}/learn`);
     } catch (error) {
-      console.error('Error enrolling in course:', error);
+      setError('Failed to enroll in the course. Please try again.');
     } finally {
       setEnrolling(false);
     }
@@ -98,6 +109,14 @@ const CourseDetails = () => {
     );
   }
 
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
+
   if (!course) {
     return (
       <Box textAlign="center" py={8}>
@@ -107,208 +126,187 @@ const CourseDetails = () => {
   }
 
   return (
-    <Container maxWidth="xl">
-      {/* Course Header */}
-      <Box py={4} bgcolor="primary.main" color="white" mt={-2}>
-        <Container maxWidth="lg">
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={8}>
-              <Typography variant="h3" gutterBottom>
-                {course.title}
-              </Typography>
-              <Typography variant="h6" gutterBottom>
-                {course.description}
-              </Typography>
-              <Stack direction="row" spacing={2} alignItems="center" mb={2}>
-                <Rating value={course.averageRating || 0} readOnly precision={0.5} />
-                <Typography>({course.totalRatings} ratings)</Typography>
-                <Chip
-                  label={course.level}
-                  color={
-                    course.level === 'Beginner'
-                      ? 'success'
-                      : course.level === 'Intermediate'
-                      ? 'warning'
-                      : 'error'
-                  }
-                />
-                <Chip
-                  icon={<TimeIcon />}
-                  label={formatDuration(course.duration)}
-                />
-                <Chip
-                  icon={<EnrolledIcon />}
-                  label={`${course.enrolledStudents?.length || 0} enrolled`}
-                />
-              </Stack>
-              <Typography variant="subtitle1">
-                Created by {course.instructor.firstName} {course.instructor.lastName}
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={4}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h4" color="primary" gutterBottom>
-                    ${course.price}
-                  </Typography>
-                  <Button
-                    variant="contained"
-                    size="large"
-                    fullWidth
-                    onClick={handleEnroll}
-                    disabled={enrolling}
-                  >
-                    {enrolling ? 'Enrolling...' : 'Enroll Now'}
-                  </Button>
-                  <Typography variant="body2" color="text.secondary" mt={2} textAlign="center">
-                    30-Day Money-Back Guarantee
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Grid container spacing={4}>
+        {/* Course Header */}
+        <Grid item xs={12}>
+          <Paper
+            sx={{
+              p: 3,
+              backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${course.thumbnail})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              color: 'white',
+              minHeight: '300px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+            }}
+          >
+            <Typography variant="h3" component="h1" gutterBottom>
+              {course.title}
+            </Typography>
+            <Box display="flex" alignItems="center" gap={2} mb={2}>
+              <Box display="flex" alignItems="center">
+                <Person sx={{ mr: 1 }} />
+                {course.instructor.firstName} {course.instructor.lastName}
+              </Box>
+              <Box display="flex" alignItems="center">
+                <Timer sx={{ mr: 1 }} />
+                {formatDuration(course.duration)}
+              </Box>
+              <Box display="flex" alignItems="center">
+                <StarIcon />
+                {course.averageRating || 0}
+              </Box>
+            </Box>
+            <Button
+              variant="contained"
+              size="large"
+              onClick={handleEnroll}
+              sx={{ alignSelf: 'flex-start', mt: 2 }}
+              disabled={enrolling}
+            >
+              {enrolling ? 'Enrolling...' : 'Enroll Now'}
+            </Button>
+          </Paper>
+        </Grid>
 
-      <Container maxWidth="lg">
-        <Grid container spacing={4} mt={2}>
+        {/* Course Description */}
+        <Grid item xs={12} md={8}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              About This Course
+            </Typography>
+            <Typography variant="body1" paragraph>
+              {course.description}
+            </Typography>
+
+            <Divider sx={{ my: 3 }} />
+
+            <Typography variant="h5" gutterBottom>
+              What You'll Learn
+            </Typography>
+            <List>
+              {course.learningOutcomes.map((outcome, index) => (
+                <ListItem key={index}>
+                  <ListItemIcon>✓</ListItemIcon>
+                  <ListItemText primary={outcome} />
+                </ListItem>
+              ))}
+            </List>
+          </Paper>
+
           {/* Course Content */}
-          <Grid item xs={12} md={8}>
-            {/* What You'll Learn */}
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h5" gutterBottom>
-                What You'll Learn
-              </Typography>
-              <Grid container spacing={2}>
-                {course.learningOutcomes.map((outcome, index) => (
-                  <Grid item xs={12} sm={6} key={index}>
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              Course Content
+            </Typography>
+            {course.lessons.map((lesson, index) => (
+              <Accordion key={lesson._id}>
+                <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                  <Box display="flex" alignItems="center" width="100%">
+                    <Typography flex={1}>
+                      {index + 1}. {lesson.title}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" mr={2}>
+                      {formatDuration(lesson.content.duration)}
+                    </Typography>
+                  </Box>
+                </AccordionSummary>
+                <AccordionDetails>
+                  <List>
                     <ListItem>
-                      <ListItemIcon>✓</ListItemIcon>
-                      <ListItemText primary={outcome} />
-                    </ListItem>
-                  </Grid>
-                ))}
-              </Grid>
-            </Paper>
-
-            {/* Course Content */}
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h5" gutterBottom>
-                Course Content
-              </Typography>
-              {course.lessons.map((lesson, index) => (
-                <Accordion key={lesson._id}>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Box display="flex" alignItems="center" width="100%">
-                      <Typography flex={1}>
-                        {index + 1}. {lesson.title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary" mr={2}>
+                      <ListItemIcon>
+                        {getLessonIcon(lesson.content.type)}
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={lesson.title}
+                        secondary={lesson.description}
+                      />
+                      <Typography variant="body2" color="text.secondary">
                         {formatDuration(lesson.content.duration)}
                       </Typography>
-                    </Box>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <List>
-                      <ListItem>
-                        <ListItemIcon>
-                          {getLessonIcon(lesson.content.type)}
-                        </ListItemIcon>
-                        <ListItemText
-                          primary={lesson.title}
-                          secondary={lesson.description}
-                        />
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDuration(lesson.content.duration)}
-                        </Typography>
-                      </ListItem>
-                    </List>
-                  </AccordionDetails>
-                </Accordion>
+                    </ListItem>
+                  </List>
+                </AccordionDetails>
+              </Accordion>
+            ))}
+          </Paper>
+
+          {/* Prerequisites */}
+          <Paper sx={{ p: 3, mb: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              Prerequisites
+            </Typography>
+            <List>
+              {course.prerequisites.map((prerequisite, index) => (
+                <ListItem key={index}>
+                  <ListItemIcon>•</ListItemIcon>
+                  <ListItemText primary={prerequisite} />
+                </ListItem>
               ))}
-            </Paper>
-
-            {/* Prerequisites */}
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h5" gutterBottom>
-                Prerequisites
-              </Typography>
-              <List>
-                {course.prerequisites.map((prerequisite, index) => (
-                  <ListItem key={index}>
-                    <ListItemIcon>•</ListItemIcon>
-                    <ListItemText primary={prerequisite} />
-                  </ListItem>
-                ))}
-              </List>
-            </Paper>
-          </Grid>
-
-          {/* Sidebar */}
-          <Grid item xs={12} md={4}>
-            {/* Instructor Info */}
-            <Paper sx={{ p: 3, mb: 3 }}>
-              <Typography variant="h5" gutterBottom>
-                Instructor
-              </Typography>
-              <Box display="flex" alignItems="center" mb={2}>
-                <InstructorIcon sx={{ mr: 1 }} />
-                <Typography>
-                  {course.instructor.firstName} {course.instructor.lastName}
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                {course.instructor.bio}
-              </Typography>
-            </Paper>
-
-            {/* Course Stats */}
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h5" gutterBottom>
-                Course Stats
-              </Typography>
-              <List>
-                <ListItem>
-                  <ListItemIcon>
-                    <TimeIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Duration"
-                    secondary={formatDuration(course.duration)}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <LevelIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Level"
-                    secondary={course.level}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <EnrolledIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Students"
-                    secondary={course.enrolledStudents?.length || 0}
-                  />
-                </ListItem>
-                <ListItem>
-                  <ListItemIcon>
-                    <StarIcon />
-                  </ListItemIcon>
-                  <ListItemText
-                    primary="Rating"
-                    secondary={`${course.averageRating || 0} (${course.totalRatings} reviews)`}
-                  />
-                </ListItem>
-              </List>
-            </Paper>
-          </Grid>
+            </List>
+          </Paper>
         </Grid>
-      </Container>
+
+        {/* Course Sidebar */}
+        <Grid item xs={12} md={4}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Course Details
+            </Typography>
+            <List>
+              <ListItem>
+                <ListItemIcon>
+                  <Timer />
+                </ListItemIcon>
+                <ListItemText primary="Duration" secondary={formatDuration(course.duration)} />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <LevelIcon />
+                </ListItemIcon>
+                <ListItemText primary="Level" secondary={course.level} />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <EnrolledIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Students"
+                  secondary={course.enrolledStudents?.length || 0}
+                />
+              </ListItem>
+              <ListItem>
+                <ListItemIcon>
+                  <StarIcon />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Rating"
+                  secondary={`${course.averageRating || 0} (${course.totalRatings} reviews)`}
+                />
+              </ListItem>
+            </List>
+          </Paper>
+
+          {/* Instructor Info */}
+          <Paper sx={{ p: 3, mt: 3 }}>
+            <Typography variant="h5" gutterBottom>
+              Instructor
+            </Typography>
+            <Box display="flex" alignItems="center" mb={2}>
+              <InstructorIcon sx={{ mr: 1 }} />
+              <Typography>
+                {course.instructor.firstName} {course.instructor.lastName}
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              {course.instructor.bio}
+            </Typography>
+          </Paper>
+        </Grid>
+      </Grid>
     </Container>
   );
 };

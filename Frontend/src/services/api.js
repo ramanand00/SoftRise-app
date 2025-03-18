@@ -1,7 +1,12 @@
 import axios from 'axios'
 
+const baseURL = import.meta.env.PROD 
+  ? '/api'
+  : 'http://localhost:5000/api'
+
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
+  baseURL,
+  withCredentials: true,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -54,8 +59,11 @@ api.interceptors.response.use(
 
 // Auth API
 export const auth = {
-  register: (userData) => api.post('/auth/register', userData),
-  login: (credentials) => api.post('/auth/login', credentials),
+  register: (data) => api.post('/auth/register', data),
+  login: (data) => api.post('/auth/login', data),
+  logout: () => api.post('/auth/logout'),
+  verifyEmail: (token) => api.get(`/auth/verify/${token}`),
+  resetPassword: (data) => api.post('/auth/reset-password', data),
   getCurrentUser: () => api.get('/auth/me'),
   updateProfile: (data) => api.put('/auth/profile', data),
 }
@@ -73,11 +81,9 @@ export const courses = {
 
 // Chat API
 export const chat = {
-  getChats: () => api.get('/chats'),
-  getById: (chatId) => api.get(`/chats/${chatId}`),
-  create: (data) => api.post('/chats', data),
-  sendMessage: (chatId, data) => api.post(`/chats/${chatId}/messages`, data),
-  markAsRead: (chatId) => api.patch(`/chats/${chatId}/read`),
+  getMessages: () => api.get('/chat/messages'),
+  sendMessage: (data) => api.post('/chat/messages', data),
+  getConversations: () => api.get('/chat/conversations'),
 }
 
 export default api 

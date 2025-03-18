@@ -1,91 +1,127 @@
-import { useState, useEffect } from 'react'
-import { useSelector } from 'react-redux'
+import React from 'react';
 import {
-  Box,
+  Container,
   Grid,
+  Paper,
+  Typography,
+  Box,
   Card,
   CardContent,
-  Typography,
-  CircularProgress,
-} from '@mui/material'
-import api from '../services/api'
+  LinearProgress,
+} from '@mui/material';
+import {
+  Timeline,
+  School,
+  Assignment,
+  EmojiEvents,
+} from '@mui/icons-material';
 
 const Dashboard = () => {
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const { user } = useSelector((state) => state.auth)
+  const user = JSON.parse(localStorage.getItem('user'));
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await api.get('/users/stats')
-        setStats(response.data)
-      } catch (error) {
-        console.error('Error fetching stats:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
+  // Placeholder data - replace with actual API calls
+  const stats = {
+    coursesEnrolled: 3,
+    coursesCompleted: 1,
+    averageProgress: 45,
+    certificatesEarned: 1,
+  };
 
-    fetchStats()
-  }, [])
-
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-        <CircularProgress />
-      </Box>
-    )
-  }
+  const StatCard = ({ title, value, icon, color }) => (
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Box display="flex" alignItems="center" mb={2}>
+          <Box
+            sx={{
+              backgroundColor: `${color}15`,
+              borderRadius: 1,
+              p: 1,
+              mr: 2,
+            }}
+          >
+            {icon}
+          </Box>
+          <Typography variant="h6" component="div">
+            {title}
+          </Typography>
+        </Box>
+        <Typography variant="h4" component="div">
+          {value}
+        </Typography>
+      </CardContent>
+    </Card>
+  );
 
   return (
-    <Box sx={{ flexGrow: 1, p: 3 }}>
-      <Typography variant="h4" gutterBottom>
-        Welcome back, {user.name}!
-      </Typography>
-      
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box mb={4}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Welcome back, {user?.firstName || 'Student'}!
+        </Typography>
+        <Typography variant="body1" color="text.secondary">
+          Track your progress and continue learning
+        </Typography>
+      </Box>
+
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Total Courses
-              </Typography>
-              <Typography variant="h5">
-                {stats?.totalCourses || 0}
-              </Typography>
-            </CardContent>
-          </Card>
+        {/* Stats Cards */}
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Enrolled Courses"
+            value={stats.coursesEnrolled}
+            icon={<School sx={{ color: '#2196f3' }} />}
+            color="#2196f3"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Completed"
+            value={stats.coursesCompleted}
+            icon={<Assignment sx={{ color: '#4caf50' }} />}
+            color="#4caf50"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Average Progress"
+            value={`${stats.averageProgress}%`}
+            icon={<Timeline sx={{ color: '#ff9800' }} />}
+            color="#ff9800"
+          />
+        </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title="Certificates"
+            value={stats.certificatesEarned}
+            icon={<EmojiEvents sx={{ color: '#f50057' }} />}
+            color="#f50057"
+          />
         </Grid>
 
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                Completed Courses
+        {/* Recent Activity */}
+        <Grid item xs={12}>
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Recent Activity
+            </Typography>
+            <Box sx={{ width: '100%', mt: 2 }}>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Course Progress
               </Typography>
-              <Typography variant="h5">
-                {stats?.completedCourses || 0}
+              <LinearProgress
+                variant="determinate"
+                value={65}
+                sx={{ height: 10, borderRadius: 5 }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                React.js Fundamentals - 65% Complete
               </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Card>
-            <CardContent>
-              <Typography color="textSecondary" gutterBottom>
-                In Progress
-              </Typography>
-              <Typography variant="h5">
-                {stats?.inProgressCourses || 0}
-              </Typography>
-            </CardContent>
-          </Card>
+            </Box>
+          </Paper>
         </Grid>
       </Grid>
-    </Box>
-  )
-}
+    </Container>
+  );
+};
 
-export default Dashboard 
+export default Dashboard; 

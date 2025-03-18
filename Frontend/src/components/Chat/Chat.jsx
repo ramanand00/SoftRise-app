@@ -15,6 +15,8 @@ import {
   Badge,
   Divider,
   CircularProgress,
+  Container,
+  Button,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -170,116 +172,125 @@ const Chat = () => {
   }
 
   return (
-    <Box display="flex" height="calc(100vh - 200px)" gap={2}>
-      {/* Chat List */}
-      <Paper sx={{ width: 300, overflow: 'auto' }}>
-        <List>
-          {chats.map((chat) => (
-            <ListItem
-              key={chat._id}
-              button
-              selected={selectedChat?._id === chat._id}
-              onClick={() => handleChatSelect(chat)}
-            >
-              <ListItemAvatar>
-                <Badge
-                  color="success"
-                  variant="dot"
-                  invisible={!onlineUsers.has(chat.participants[0]._id)}
-                >
-                  <Avatar src={chat.type === 'group' ? chat.groupAvatar : chat.participants[0].avatar} />
-                </Badge>
-              </ListItemAvatar>
-              <ListItemText
-                primary={chat.type === 'group' ? chat.groupName : `${chat.participants[0].firstName} ${chat.participants[0].lastName}`}
-                secondary={chat.lastMessage?.content}
-              />
-            </ListItem>
-          ))}
-        </List>
-      </Paper>
+    <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+      <Paper
+        sx={{
+          height: 'calc(100vh - 200px)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* Chat Header */}
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+          <Typography variant="h6">Course Chat</Typography>
+        </Box>
 
-      {/* Chat Messages */}
-      <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-        {selectedChat ? (
-          <>
-            {/* Chat Header */}
-            <Box p={2} borderBottom={1} borderColor="divider">
-              <Typography variant="h6">
-                {selectedChat.type === 'group'
-                  ? selectedChat.groupName
-                  : `${selectedChat.participants[0].firstName} ${selectedChat.participants[0].lastName}`}
-              </Typography>
-              {typing[selectedChat._id] && (
-                <Typography variant="caption" color="textSecondary">
-                  {typing[selectedChat._id]} is typing...
-                </Typography>
-              )}
-            </Box>
-
-            {/* Messages */}
-            <Box flex={1} overflow="auto" p={2}>
-              {selectedChat.messages.map((msg) => (
-                <Box
-                  key={msg._id}
-                  alignSelf={msg.sender._id === user._id ? 'flex-end' : 'flex-start'}
-                  mb={1}
+        {/* Messages */}
+        <Box
+          sx={{
+            flex: 1,
+            overflow: 'auto',
+            p: 2,
+            backgroundColor: 'grey.50',
+          }}
+        >
+          <List>
+            {selectedChat?.messages.map((message, index) => (
+              <React.Fragment key={message._id}>
+                <ListItem
+                  sx={{
+                    flexDirection:
+                      message.sender._id === user._id ? 'row-reverse' : 'row',
+                  }}
                 >
+                  <ListItemAvatar>
+                    <Avatar src={message.sender.avatar} alt={message.sender.name} />
+                  </ListItemAvatar>
                   <Paper
                     sx={{
-                      p: 1,
-                      backgroundColor: msg.sender._id === user._id ? 'primary.light' : 'grey.100',
                       maxWidth: '70%',
+                      p: 2,
+                      ml: message.sender._id === user._id ? 0 : 1,
+                      mr: message.sender._id === user._id ? 1 : 0,
+                      backgroundColor:
+                        message.sender._id === user._id
+                          ? 'primary.main'
+                          : 'background.paper',
+                      color:
+                        message.sender._id === user._id ? 'white' : 'text.primary',
                     }}
                   >
-                    <Typography variant="body2">{msg.content}</Typography>
+                    <Typography variant="subtitle2" gutterBottom>
+                      {message.sender.name}
+                    </Typography>
+                    <Typography variant="body1">{message.content}</Typography>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: 'block',
+                        textAlign: 'right',
+                        mt: 1,
+                        color:
+                          message.sender._id === user._id
+                            ? 'rgba(255,255,255,0.7)'
+                            : 'text.secondary',
+                      }}
+                    >
+                      {new Date(message.timestamp).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </Typography>
                   </Paper>
-                </Box>
-              ))}
-              <div ref={messagesEndRef} />
-            </Box>
+                </ListItem>
+                {index < selectedChat.messages.length - 1 && (
+                  <Divider variant="middle" sx={{ my: 1 }} />
+                )}
+              </React.Fragment>
+            ))}
+            <div ref={messagesEndRef} />
+          </List>
+        </Box>
 
-            {/* Message Input */}
-            <Box p={2} borderTop={1} borderColor="divider">
-              <Box display="flex" gap={1}>
-                <IconButton size="small">
-                  <AttachFileIcon />
-                </IconButton>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Type a message..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') handleMessageSend();
-                    handleTyping();
-                  }}
-                />
-                <IconButton
-                  color="primary"
-                  onClick={handleMessageSend}
-                  disabled={!message.trim()}
-                >
-                  <SendIcon />
-                </IconButton>
-              </Box>
-            </Box>
-          </>
-        ) : (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            height="100%"
-          >
-            <Typography variant="h6" color="textSecondary">
-              Select a chat to start messaging
-            </Typography>
+        {/* Message Input */}
+        <Box
+          component="form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleMessageSend();
+            handleTyping();
+          }}
+          sx={{
+            p: 2,
+            borderTop: 1,
+            borderColor: 'divider',
+            backgroundColor: 'background.paper',
+          }}
+        >
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <IconButton size="small">
+              <AttachFileIcon />
+            </IconButton>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Type your message..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              size="small"
+            />
+            <Button
+              type="submit"
+              variant="contained"
+              endIcon={<SendIcon />}
+              disabled={!message.trim()}
+            >
+              Send
+            </Button>
           </Box>
-        )}
+        </Box>
       </Paper>
-    </Box>
+    </Container>
   );
 };
 

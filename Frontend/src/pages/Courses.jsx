@@ -19,6 +19,7 @@ import {
   Container,
   Stack,
   Pagination,
+  Alert,
 } from '@mui/material'
 import {
   Search as SearchIcon,
@@ -39,6 +40,7 @@ const Courses = () => {
   const [priceRange, setPriceRange] = useState('')
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [error, setError] = useState('')
 
   const categories = [
     'Web Development',
@@ -60,30 +62,30 @@ const Courses = () => {
   ]
 
   useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await api.get('/courses', {
+          params: {
+            search: searchTerm,
+            category,
+            level,
+            priceRange,
+            page,
+            limit: 8,
+          },
+        })
+        setCourses(response.data.courses)
+        setTotalPages(Math.ceil(response.data.total / 8))
+      } catch (error) {
+        setError('Failed to load courses. Please try again later.')
+        console.error('Error fetching courses:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     fetchCourses()
   }, [searchTerm, category, level, priceRange, page])
-
-  const fetchCourses = async () => {
-    try {
-      setLoading(true)
-      const response = await api.get('/courses', {
-        params: {
-          search: searchTerm,
-          category,
-          level,
-          priceRange,
-          page,
-          limit: 8,
-        },
-      })
-      setCourses(response.data.courses)
-      setTotalPages(Math.ceil(response.data.total / 8))
-    } catch (error) {
-      console.error('Error fetching courses:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleCourseClick = (slug) => {
     navigate(`/courses/${slug}`)
@@ -102,8 +104,20 @@ const Courses = () => {
     )
   }
 
+  if (error) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    )
+  }
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Available Courses
+      </Typography>
+
       {/* Search and Filters */}
       <Box mb={4}>
         <Grid container spacing={2} alignItems="center">
